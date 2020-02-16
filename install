@@ -84,11 +84,11 @@ chmod 600 /swapfile >> $LOG_FILE 2>&1
 mkswap /swapfile >> $LOG_FILE 2>&1
 swapon /swapfile >> $LOG_FILE 2>&1
 
-IP=$(ifconfig eth0 | grep "inet" | grep -v "inet6" | awk -F: '{print $2}' | awk '{print $1}')
+IP=$(ifconfig eth0 | grep "inet" | grep -v "inet6" | awk '{print $2}')
 
 decho "Updating system..."
 sleep 10
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - >> $LOG_FILE 2>&1
+curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash - >> $LOG_FILE 2>&1
 apt update >> $LOG_FILE 2>&1
 
 decho "Installing necessary packages..."
@@ -120,6 +120,8 @@ mkdir -p $CONFIG_DIR >> $LOG_FILE 2>&1
 
 decho "Generating SSL certificates..."
 
+sed -i '/RANDFILE/d' /etc/ssl/openssl.cnf
+
 openssl genrsa \
   -out $CA_KEY_PATH \
   4096 >> $LOG_FILE 2>&1
@@ -132,7 +134,7 @@ openssl req \
   -key $CA_KEY_PATH \
   -days 3650 \
   -out $CA_PATH \
-  -subj "/C=IS/ST=/L=Reykjavik/O=Lamassu Operator CA/CN=operator.lamassu.is" \
+  -subj "/C=IS/L=Reykjavik/O=Lamassu Operator CA/CN=operator.lamassu.is" \
   >> $LOG_FILE 2>&1
 
 openssl genrsa \
@@ -142,7 +144,7 @@ openssl genrsa \
 openssl req -new \
   -key $SERVER_KEY_PATH \
   -out /tmp/Lamassu_OP.csr.pem \
-  -subj "/C=IS/ST=/L=Reykjavik/O=Lamassu Operator/CN=$IP" \
+  -subj "/C=IS/L=Reykjavik/O=Lamassu Operator/CN=$IP" \
   -reqexts SAN \
   -sha256 \
   -config <(cat /etc/ssl/openssl.cnf \
