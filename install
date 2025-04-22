@@ -131,9 +131,9 @@ IP=$(ifconfig eth0 | grep "inet" | grep -v "inet6" | awk '{print $2}')
 NODE_MODULES=$(npm -g root)
 NPM_BIN=$(npm -g bin)
 
-decho "Installing lamassu-server (v10.2.0-rc.1)..."
-sourceHash=$'bb688bb4f7386297b3755d95a1321785306daf06c5d030c7a6f1e0607e2f00c1'
-curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/lamassu/lamassu-server/releases/download/v10.2.0-rc.1/lamassu-server-v10.2.0-rc.1.tar.gz >> $LOG_FILE 2>&1
+decho "Installing lamassu-server (v10.2.0-rc.2)..."
+sourceHash=$'c9610a4740f10ad0e09091c3c42d908549a8e4da64a0ff7b932e867391748883'
+curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/lamassu/lamassu-server/releases/download/v10.2.0-rc.2/lamassu-server-v10.2.0-rc.2.tar.gz >> $LOG_FILE 2>&1
 hash=$(sha256sum /tmp/lamassu-server.tar.gz | awk '{print $1}' | sed 's/ *$//g')
 
 if [ $hash != $sourceHash ] ; then
