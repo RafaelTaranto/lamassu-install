@@ -93,10 +93,10 @@ if [[ "$UBUNTU_VERSION" == "16.04" ]]; then
   job="@reboot root sleep 5 | $command"
   echo "$job" > /etc/cron.d/lamassu-upgrade
 
-  echo -e "\033[0;33mupdating to node 14\033[0m"
+  echo -e "\033[0;33mupdating to node 22\033[0m"
   npm install -g n
-  sudo n 14
-  sudo n which 14
+  sudo n 22
+  sudo n which 22
 
   checkDpkgLock
   echo -e "\033[0;33mupdating to ubuntu 18.04\033[0m"

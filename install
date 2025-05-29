@@ -121,7 +121,7 @@ swapon /swapfile >> $LOG_FILE 2>&1
 
 decho "Updating system..."
 sleep 10
-curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - >> $LOG_FILE 2>&1
+curl -sL https://deb.nodesource.com/setup_22.x | sudo -E bash - >> $LOG_FILE 2>&1
 apt update >> $LOG_FILE 2>&1
 
 decho "Installing necessary packages..."
@@ -129,11 +129,11 @@ apt install nodejs python2-minimal build-essential supervisor postgresql libpq-d
 
 IP=$(ifconfig eth0 | grep "inet" | grep -v "inet6" | awk '{print $2}')
 NODE_MODULES=$(npm -g root)
-NPM_BIN=$(npm -g bin)
+NPM_BIN=$(npm config get prefix)/bin
 
 decho "Installing lamassu-server (v10.2.3)..."
-sourceHash=$'cdf77a4fe5a9f7e9eec84deecd69220bd248808299146cc03a92e785b176a790'
-curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/lamassu/lamassu-server/releases/download/v10.2.3/lamassu-server-v10.2.3.tar.gz >> $LOG_FILE 2>&1
+sourceHash=$'278e35b8641c4fcb5e8f024af2970b6406d5e5d7e78b9a4e6e1a1080ae9a62f6'
+curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/RafaelTaranto/lamassu-server/releases/download/v8.1.1/lamassu-server.tar.gz >> $LOG_FILE 2>&1
 hash=$(sha256sum /tmp/lamassu-server.tar.gz | awk '{print $1}' | sed 's/ *$//g')
 
 if [ $hash != $sourceHash ] ; then
@@ -230,8 +230,7 @@ decho "Setting up lamassu-admin..."
 ADMIN_REGISTRATION_URL=`lamassu-register $email superuser 2>> $LOG_FILE`
 
 decho "Setting up backups..."
-BIN=$(npm -g bin)
-BACKUP_CMD=$BIN/lamassu-backup-pg
+BACKUP_CMD=$NPM_BIN/lamassu-backup-pg
 mkdir -p $BACKUP_DIR
 BACKUP_CRON="@daily $BACKUP_CMD > /dev/null"
 (crontab -l 2>/dev/null || echo -n ""; echo "$BACKUP_CRON") | crontab - >> $LOG_FILE 2>&1
@@ -246,7 +245,7 @@ ufw -f enable >> $LOG_FILE 2>&1
 decho "Setting up supervisor..."
 cat <<EOF > /etc/supervisor/conf.d/lamassu-server.conf
 [program:lamassu-server]
-command=${NPM_BIN}/lamassu-server
+command=${NPM_BIN}/lamassu-server --env-file=${NODE_MODULES}/lamassu-server/.env
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/supervisor/lamassu-server.err.log
@@ -256,7 +255,7 @@ EOF
 
 cat <<EOF > /etc/supervisor/conf.d/lamassu-admin-server.conf
 [program:lamassu-admin-server]
-command=${NPM_BIN}/lamassu-admin-server
+command=${NPM_BIN}/lamassu-admin-server --env-file=${NODE_MODULES}/lamassu-server/.env
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/supervisor/lamassu-admin-server.err.log

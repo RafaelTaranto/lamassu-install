@@ -12,10 +12,11 @@ if [[ -z "${NODE_ENV}" ]]; then
   echo 'export NODE_ENV=production' >> /etc/environment
 fi
 
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 UBUNTU_VERSION=$(lsb_release -rs)
 NODE_MODULES=$(npm -g root)
-export NPM_BIN=$(npm -g bin)
+NPM_BIN=$(npm config get prefix)/bin
+export NODE_MODULES
+export NPM_BIN
 
 rm -f ${LOG_FILE}
 
@@ -122,8 +123,8 @@ if [[ "$UBUNTU_VERSION" == "20.04" ]]; then
   fi
 
   decho "updating lamassu-server to v10.2.3..."
-  sourceHash=$'cdf77a4fe5a9f7e9eec84deecd69220bd248808299146cc03a92e785b176a790'
-  curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/lamassu/lamassu-server/releases/download/v10.2.3/lamassu-server-v10.2.3.tar.gz >> $LOG_FILE 2>&1
+  sourceHash=$'278e35b8641c4fcb5e8f024af2970b6406d5e5d7e78b9a4e6e1a1080ae9a62f6'
+  curl -sSLo /tmp/lamassu-server.tar.gz https://github.com/RafaelTaranto/lamassu-server/releases/download/v8.1.1/lamassu-server.tar.gz >> $LOG_FILE 2>&1
   hash=$(sha256sum /tmp/lamassu-server.tar.gz | awk '{print $1}' | sed 's/ *$//g')
 
   if [ $hash != $sourceHash ] ; then
@@ -133,15 +134,17 @@ if [[ "$UBUNTU_VERSION" == "20.04" ]]; then
 
   tar -xzf /tmp/lamassu-server.tar.gz -C $NODE_MODULES/ >> $LOG_FILE 2>&1
 
+  echo -e "\033[0;33mupdating to node 22\033[0m"
+  npm install -g n
+  sudo n 22
+  sudo n which 22
+  npm config set prefix /usr
+
   decho "Creating symlinks..."
   cp -s $NODE_MODULES/lamassu-server/bin/lamassu-* $NPM_BIN/ >> ${LOG_FILE} 2>&1
   cp -s $NODE_MODULES/lamassu-server/bin/hkdf $NPM_BIN/ >> ${LOG_FILE} 2>&1
   cp -s $NODE_MODULES/lamassu-server/bin/bip39 $NPM_BIN/ >> ${LOG_FILE} 2>&1
   chmod +x $NODE_MODULES/lamassu-server/bin/* >> ${LOG_FILE} 2>&1
-
-  decho "rebuilding npm deps"
-  cd $(npm root -g)/lamassu-server/ >> ${LOG_FILE} 2>&1
-  npm rebuild >> ${LOG_FILE} 2>&1
 
   CONFIG_DIR=/etc/lamassu
 
@@ -167,8 +170,8 @@ if [[ "$UBUNTU_VERSION" == "20.04" ]]; then
   lamassu-update-to-mnemonic --prod >> ${LOG_FILE} 2>&1
 
   decho "updating supervisor conf"
-  perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/lamassu-server/g' /etc/supervisor/conf.d/lamassu-server.conf >> ${LOG_FILE} 2>&1
-  perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/lamassu-admin-server/g' /etc/supervisor/conf.d/lamassu-admin-server.conf >> ${LOG_FILE} 2>&1
+  perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/lamassu-server --env-file=$ENV{NODE_MODULES}\/lamassu-server\/.env/g' /etc/supervisor/conf.d/lamassu-server.conf >> ${LOG_FILE} 2>&1
+  perl -i -pe 's/command=.*/command=$ENV{NPM_BIN}\/lamassu-admin-server --env-file=$ENV{NODE_MODULES}\/lamassu-server\/.env/g' /etc/supervisor/conf.d/lamassu-admin-server.conf >> ${LOG_FILE} 2>&1
   perl -i -pe 's/environment=.*/environment=HOME="\/root",NODE_ENV="production"/g' /etc/supervisor/conf.d/lamassu-server.conf >> ${LOG_FILE} 2>&1
   perl -i -pe 's/environment=.*/environment=HOME="\/root",NODE_ENV="production"/g' /etc/supervisor/conf.d/lamassu-admin-server.conf >> ${LOG_FILE} 2>&1
   cat <<EOF >> /etc/supervisor/supervisord.conf
